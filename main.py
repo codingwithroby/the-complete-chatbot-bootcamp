@@ -1,9 +1,13 @@
-import openai
+from openai import OpenAI
 from fastapi import FastAPI, Form, Request
 from typing import Annotated
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from mangum import Mangum
+
+openai = OpenAI(
+    api_key='YOUR API KEY GOES HERE!'
+)
 
 app = FastAPI()
 handler = Mangum(app)
@@ -32,13 +36,13 @@ async def chat(request: Request, user_input: Annotated[str, Form()]):
     chat_log.append({'role': 'user', 'content': user_input})
     chat_responses.append(user_input)
 
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model='gpt-3.5-turbo',
         messages=chat_log,
         temperature=0.6
     )
 
-    bot_response = response['choices'][0]['message']['content']
+    bot_response = response.choices[0].message.content
     chat_log.append({'role': 'assistant', 'content': bot_response})
     chat_responses.append(bot_response)
 
@@ -53,13 +57,13 @@ async def image_page(request: Request):
 @app.post("/image", response_class=HTMLResponse)
 async def create_image(request: Request, user_input: Annotated[str, Form()]):
 
-    response = openai.Image.create(
+    response = openai.images.generate(
         prompt=user_input,
         n=1,
         size="512x512"
     )
 
-    image_url = response['data'][0]['url']
+    image_url = response.data[0].url
     return templates.TemplateResponse("image.html", {"request": request, "image_url": image_url})
 
 
